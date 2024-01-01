@@ -1,4 +1,8 @@
 ﻿using Elasticsearch.Net;
+using System;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace ElasticSearch_Implementation
 {
@@ -16,7 +20,7 @@ namespace ElasticSearch_Implementation
             var settings = new ConnectionConfiguration(new Uri("http://localhost:9200"));
             var lowlevelClient = new ElasticLowLevelClient(settings);
 
-            var person = new { FirstName = "John", LastName = "Doe" };
+            var person = new Person { FirstName = "John", LastName = "Doe" };
             var indexResponse = await lowlevelClient.IndexAsync<BytesResponse>("people", "1", PostData.Serializable(person));
 
             if (!indexResponse.Success)
@@ -25,7 +29,7 @@ namespace ElasticSearch_Implementation
                 return;
             }
 
-            var searchResponse = await lowlevelClient.SearchAsync<BytesResponse>("people", PostData.Serializable(new
+            var searchResponse = await lowlevelClient.SearchAsync<StringResponse>("people", PostData.Serializable(new
             {
                 query = new
                 {
@@ -42,33 +46,52 @@ namespace ElasticSearch_Implementation
                 return;
             }
 
-            var searchResult = System.Text.Json.JsonSerializer.Deserialize<SearchResult>(System.Text.Encoding.UTF8.GetString(searchResponse.Body));
-
-            foreach (var hit in searchResult.hits.hits)
+            try
             {
-                Console.WriteLine($"Found person: {hit._source.FirstName} {hit._source.LastName}");
+                var searchResults = JsonSerializer.Deserialize<SearchResult>(searchResponse.Body);
+
+                if (searchResults?.hits?.hits != null && searchResults.hits.hits.Any())
+                {
+                    var resultPerson = JsonSerializer.Deserialize<Person>(searchResults.hits.hits.First()._source.ToString());
+                    if (resultPerson != null)
+                    {
+                        Console.WriteLine($"Found person: {resultPerson.FirstName} {resultPerson.LastName}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Deserialization of person failed.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No hits or deserialization failed.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deserializing response: {ex.Message}");
             }
         }
     }
 
-    public class SearchResult
+    class Person
     {
-        public Hits? hits { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
     }
 
-    public class Hits
+    class SearchResult
     {
-        public IEnumerable<Hit> hits { get; set; }
+        public Hits hits { get; set; }
     }
 
-    public class Hit
+    class Hits
     {
-        public Person _source { get; set; }
+        public Hit[] hits { get; set; }
     }
 
-    public class Person
+    class Hit
     {
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
+        public JsonElement _source { get; set; }
     }
 }

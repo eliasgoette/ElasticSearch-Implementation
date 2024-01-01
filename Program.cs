@@ -10,32 +10,39 @@ namespace ElasticSearch_Implementation
     {
         static async Task Main(string[] args)
         {
-            await ElasticSearchQuery();
+            var lowlevelClient = CreateElasticClient();
+            await IndexPersonAsync(lowlevelClient, new Person { FirstName = "John", LastName = "Doe" });
+            await SearchPersonAsync(lowlevelClient, "John");
         }
 
-        static async Task ElasticSearchQuery()
+        static ElasticLowLevelClient CreateElasticClient()
         {
-            Console.WriteLine("Elastic Search Test\n");
-
             var settings = new ConnectionConfiguration(new Uri("http://localhost:9200"));
-            var lowlevelClient = new ElasticLowLevelClient(settings);
+            return new ElasticLowLevelClient(settings);
+        }
 
-            var person = new Person { FirstName = "John", LastName = "Doe" };
-            var indexResponse = await lowlevelClient.IndexAsync<BytesResponse>("people", "1", PostData.Serializable(person));
-
+        static async Task IndexPersonAsync(ElasticLowLevelClient client, Person person)
+        {
+            var indexResponse = await client.IndexAsync<BytesResponse>("people", "1", PostData.Serializable(person));
             if (!indexResponse.Success)
             {
                 Console.WriteLine($"Failed to index document: {indexResponse.DebugInformation}");
-                return;
             }
+            else
+            {
+                Console.WriteLine("Person indexed successfully.");
+            }
+        }
 
-            var searchResponse = await lowlevelClient.SearchAsync<StringResponse>("people", PostData.Serializable(new
+        static async Task SearchPersonAsync(ElasticLowLevelClient client, string firstName)
+        {
+            var searchResponse = await client.SearchAsync<StringResponse>("people", PostData.Serializable(new
             {
                 query = new
                 {
                     match = new
                     {
-                        FirstName = "John"
+                        FirstName = firstName
                     }
                 }
             }));

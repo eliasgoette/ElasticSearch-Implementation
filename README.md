@@ -1,3 +1,3 @@
 # ElasticSearch-Implemtation
 
-Implementation of ElasticSearch for NoSQL lecure
+Demo implementation of ElasticSearch for NoSQL lecure

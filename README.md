@@ -1,4 +1,4 @@
-# ElasticSearch-Implemtation
+# ElasticSearch-Implementation
 
 Demo implementation of ElasticSearch for NoSQL lecure
 

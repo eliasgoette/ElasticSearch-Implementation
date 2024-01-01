@@ -9,10 +9,16 @@ namespace ElasticSearch_Implementation
         {
             var lowlevelClient = CreateElasticClient();
             await IndexPersonAsync(lowlevelClient, new Person { FirstName = "John", LastName = "Doe" });
+            Console.ReadLine();
+
             var (person, docId) = await SearchPersonAsync(lowlevelClient, "John");
+            Console.ReadLine();
+
             if (person != null && docId != null)
             {
                 await UpdatePersonAsync(lowlevelClient, docId, new Person { FirstName = "John", LastName = "Smith" });
+                Console.ReadLine();
+
                 await DeletePersonAsync(lowlevelClient, docId);
             }
         }
